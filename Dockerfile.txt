@@ -4,9 +4,20 @@ FROM kalilinux/kali-rolling
 ENV PORT=7681
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install required packages
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-     ca-certificates wget curl git python3 python3-pip tini fastfetch
+     ca-certificates \
+     wget \
+     curl \
+     git \
+     python3 \
+     python3-pip \
+     tini \
+     fastfetch \
+     netdiscover \
+     libcap2-bin \
+  && rm -rf /var/lib/apt/lists/*
 
 # Ensure the target dir exists
 RUN mkdir -p /usr/local/bin
@@ -19,10 +30,14 @@ RUN set -eux; \
       aarch64|arm64) ttyd_asset="ttyd.aarch64" ;; \
       *) echo "Unsupported arch: $arch" >&2; exit 1 ;; \
     esac; \
-    wget -qO /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/latest/download/${ttyd_asset}" \
+    wget -qO /usr/local/bin/ttyd \
+      "https://github.com/tsl0922/ttyd/releases/latest/download/${ttyd_asset}" \
     && chmod +x /usr/local/bin/ttyd
 
-# Show system info on shell start (fastfetch)
+# Give netdiscover the file capability if the runtime permits it
+RUN setcap cap_net_raw+ep /usr/sbin/netdiscover || true
+
+# Show system info on shell start
 RUN echo "fastfetch || true" >> /root/.bashrc
 
 EXPOSE 7681
